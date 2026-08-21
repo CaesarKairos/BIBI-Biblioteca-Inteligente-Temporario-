@@ -1115,6 +1115,13 @@ def uploaded_file(filename):
         filename
     )
 
+@app.route('/externalcovers/<filename>')
+def external_file(filename):
+    return send_from_directory(
+        EXTERNAL_FOLDER,
+        filename
+    )
+
 @app.route('/api/livros/<int:id>', methods=['PUT'])
 @admin_required
 def editar_livro(id):
