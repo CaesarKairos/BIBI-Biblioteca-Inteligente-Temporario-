@@ -16,7 +16,7 @@ import time
 from io import BytesIO
 import atexit
 import webview
-from flask import Flask, render_template_string, jsonify, request, send_from_directory
+from flask import Flask, render_template, render_template_string, jsonify, request, send_from_directory, session, redirect, url_for
 from dotenv import load_dotenv
 import sys
 
@@ -210,6 +210,10 @@ class DatabaseManager:
             cursor.execute("ALTER TABLE Livros ADD COLUMN localizacao TEXT")
         except sqlite3.OperationalError:
             pass
+        try:
+            cursor.execute("ALTER TABLE Usuarios ADD COLUMN avatar_seed TEXT")
+        except sqlite3.OperationalError:
+            pass
 
         cursor.execute("INSERT OR IGNORE INTO Configuracoes (chave, valor) VALUES ('bloquear_email', 'false')")
         cursor.execute("INSERT OR IGNORE INTO Configuracoes (chave, valor) VALUES ('exigir_senha_emprestimo', 'false')")
@@ -313,6 +317,72 @@ def verificar_senha_admin(senha):
         return False
     senha_hash = hashlib.sha256(senha.encode()).hexdigest()
     return senha_hash == row[0]
+
+# ==========================================
+# CONTA DA BIBLIOTECÁRIA (login real)
+# Reutiliza a tabela Configuracoes com o mesmo
+# hashing sha256 de verificar_senha_admin.
+# ==========================================
+def bibliotecaria_existe():
+    conn = db_manager.get_connection()
+    cursor = conn.cursor()
+    cursor.execute("SELECT valor FROM Configuracoes WHERE chave='bibliotecaria_usuario'")
+    row = cursor.fetchone()
+    conn.close()
+    return row is not None and bool(row[0])
+
+def criar_bibliotecaria(usuario, senha):
+    usuario = (usuario or '').strip()
+    if not usuario or not senha:
+        return False, "Usuário e senha são obrigatórios."
+    if bibliotecaria_existe():
+        return False, "Já existe uma conta de bibliotecária."
+    hash_senha = hashlib.sha256(senha.encode()).hexdigest()
+    conn = db_manager.get_connection()
+    cursor = conn.cursor()
+    cursor.execute("INSERT OR REPLACE INTO Configuracoes (chave, valor) VALUES ('bibliotecaria_usuario', ?)", (usuario,))
+    cursor.execute("INSERT OR REPLACE INTO Configuracoes (chave, valor) VALUES ('bibliotecaria_senha_hash', ?)", (hash_senha,))
+    conn.commit()
+    conn.close()
+    return True, "ok"
+
+def verificar_bibliotecaria(usuario, senha):
+    if not usuario or not senha:
+        return False
+    conn = db_manager.get_connection()
+    cursor = conn.cursor()
+    cursor.execute("SELECT valor FROM Configuracoes WHERE chave='bibliotecaria_usuario'")
+    row_user = cursor.fetchone()
+    cursor.execute("SELECT valor FROM Configuracoes WHERE chave='bibliotecaria_senha_hash'")
+    row_hash = cursor.fetchone()
+    conn.close()
+    if not row_user or not row_hash or not row_user[0] or not row_hash[0]:
+        return False
+    if (row_user[0] or '').lower() != (usuario or '').strip().lower():
+        return False
+    return hashlib.sha256(senha.encode()).hexdigest() == row_hash[0]
+
+def get_bibliotecaria_avatar_seed():
+    conn = db_manager.get_connection()
+    cursor = conn.cursor()
+    cursor.execute("SELECT valor FROM Configuracoes WHERE chave='bibliotecaria_avatar_seed'")
+    row = cursor.fetchone()
+    conn.close()
+    return row[0] if row and row[0] else 'bibliotecaria'
+
+def set_bibliotecaria_avatar_seed(seed):
+    conn = db_manager.get_connection()
+    cursor = conn.cursor()
+    cursor.execute("INSERT OR REPLACE INTO Configuracoes (chave, valor) VALUES ('bibliotecaria_avatar_seed', ?)", (str(seed),))
+    conn.commit()
+    conn.close()
+
+# Lista de sementes de avatar (estilo único adventurer-neutral).
+AVATAR_OPCOES = ['bibi-1', 'bibi-2', 'bibi-3', 'bibi-4', 'bibi-5', 'bibi-6',
+                 'bibi-7', 'bibi-8', 'bibi-9', 'bibi-10', 'bibi-11', 'bibi-12']
+
+def avatar_url(seed):
+    return "https://api.dicebear.com/9.x/adventurer-neutral/svg?seed=" + str(seed)
 
 def download_image_from_url(url, timeout=10):
     try:
@@ -763,14 +833,11 @@ def iniciar_verificacao_notificacoes():
 
 @app.route('/')
 def landing():
-    return render_template_string(LANDING_PAGE)
+    return render_template('index.html')
 
 @app.route('/app')
 def app_principal():
-    admin = is_admin()
-    # Busca a quantidade de aulas diretamente do banco para injetar no HTML
-    qtd_aulas = get_quantidade_aulas()
-    return render_template_string(get_app_html(admin, qtd_aulas))
+    return render_template('index.html')
 
 @app.route('/static/images/<path:filename>')
 def serve_images(filename):
@@ -809,6 +876,226 @@ def hero_image():
         chosen = random.choice(images)
         return jsonify({"url": f"/static/images/hero/{chosen}"})
     return jsonify({"url": "/static/images/hero/hero.jpg"}), 200
+
+@app.route('/api/hero-images', methods=['GET'])
+def hero_images():
+    """Devolve a lista completa de imagens do hero para que o carrossel
+    possa alternar localmente (em vez de chamar /api/hero-image a cada troca)."""
+    hero_dir = HERO_FOLDER
+    image_extensions = ('.jpg', '.jpeg', '.png', '.gif', '.webp')
+    urls = []
+    if os.path.exists(hero_dir):
+        for f in sorted(os.listdir(hero_dir)):
+            if f.lower().endswith(image_extensions):
+                urls.append(f"/static/images/hero/{f}")
+    if not urls:
+        urls = ["/static/images/hero/hero.jpg"]
+    return jsonify({"imagens": urls})
+
+# ==========================================
+# AUTENTICAÇÃO DA BIBLIOTECÁRIA (sessão)
+# ==========================================
+@app.route('/api/bibliotecaria/estado', methods=['GET'])
+def bibliotecaria_estado():
+    return jsonify({
+        "existe": bibliotecaria_existe(),
+        "autenticado": bool(session.get('bibliotecaria'))
+    })
+
+@app.route('/api/bibliotecaria/crear', methods=['POST'])
+def bibliotecaria_criar():
+    if bibliotecaria_existe():
+        return jsonify({"erro": "Já existe uma conta de bibliotecária."}), 400
+    data = request.json or {}
+    ok, msg = criar_bibliotecaria(data.get('usuario'), data.get('senha'))
+    if not ok:
+        return jsonify({"erro": msg}), 400
+    session['bibliotecaria'] = data.get('usuario', '').strip()
+    session['tipo_sessao'] = 'bibliotecaria'
+    session['avatar_seed'] = get_bibliotecaria_avatar_seed()
+    return jsonify({
+        "status": "ok",
+        "usuario": data.get('usuario', '').strip(),
+        "avatar_seed": session.get('avatar_seed')
+    })
+
+@app.route('/api/bibliotecaria/login', methods=['POST'])
+def bibliotecaria_login():
+    data = request.json or {}
+    if not bibliotecaria_existe():
+        return jsonify({"erro": "Primeiro é preciso criar a conta da bibliotecária."}), 400
+    if not verificar_bibliotecaria(data.get('usuario'), data.get('senha')):
+        return jsonify({"erro": "Usuário ou senha incorretos."}), 401
+    session['bibliotecaria'] = data.get('usuario', '').strip()
+    session['tipo_sessao'] = 'bibliotecaria'
+    session['avatar_seed'] = get_bibliotecaria_avatar_seed()
+    return jsonify({
+        "status": "ok",
+        "usuario": data.get('usuario', '').strip(),
+        "avatar_seed": session.get('avatar_seed')
+    })
+
+@app.route('/api/bibliotecaria/logout', methods=['POST'])
+def bibliotecaria_logout():
+    session.pop('bibliotecaria', None)
+    session.pop('tipo_sessao', None)
+    session.pop('avatar_seed', None)
+    return jsonify({"status": "ok"})
+
+@app.route('/api/bibliotecaria/perfil', methods=['GET'])
+def bibliotecaria_perfil():
+    if not session.get('bibliotecaria'):
+        return jsonify({"autenticado": False}), 401
+    return jsonify({
+        "autenticado": True,
+        "tipo": "bibliotecaria",
+        "usuario": session['bibliotecaria'],
+        "avatar_seed": session.get('avatar_seed') or get_bibliotecaria_avatar_seed()
+    })
+
+@app.route('/api/bibliotecaria/avatar', methods=['POST'])
+def bibliotecaria_avatar():
+    if not session.get('bibliotecaria'):
+        return jsonify({"erro": "Não autenticado"}), 401
+    data = request.json or {}
+    seed = (data.get('seed') or '').strip()
+    if not seed:
+        return jsonify({"erro": "Semente vazia"}), 400
+    set_bibliotecaria_avatar_seed(seed)
+    session['avatar_seed'] = seed
+    return jsonify({"status": "ok", "avatar_seed": seed})
+
+@app.route('/api/avatares-opcoes', methods=['GET'])
+def avatares_opcoes():
+    """Sementes de avatar (estilo único adventurer-neutral) para exibir a grade."""
+    return jsonify({"sementes": AVATAR_OPCOES, "estilo": "adventurer-neutral"})
+
+# ==========================================
+# ÁREA DO ALUNO (login próprio por e-mail)
+# O app.py não possui tabela de contas de alunos: a autenticação
+# é feita contra um leitor (estudante) existente em Usuarios.
+# ==========================================
+def _aluno_atual():
+    usuario_id = session.get('aluno_id')
+    if not usuario_id:
+        return None
+    conn = db_manager.get_connection()
+    cursor = conn.cursor()
+    cursor.execute("SELECT id, nome, tipo, email, sala, periodo, materia, telefone, avatar_seed FROM Usuarios WHERE id = ?", (usuario_id,))
+    row = cursor.fetchone()
+    conn.close()
+    if not row or row[2] == 'bibliotecario':
+        return None
+    return {
+        "id": row[0], "nome": row[1], "tipo": row[2], "email": row[3],
+        "sala": row[4], "periodo": row[5], "materia": row[6],
+        "telefone": row[7], "avatar_seed": row[8] or f'aluno-{row[0]}'
+    }
+
+def _exige_bibliotecaria():
+    """Defesa em profundidade: enquanto não houver bibliotecária cadastrada,
+    nenhuma rota de aluno deve funcionar — o primeiro acesso é obrigatoriamente
+    a criação da conta da bibliotecária."""
+    if not bibliotecaria_existe():
+        return jsonify({"erro": "Primeiro é preciso criar a conta da bibliotecária."}), 403
+    return None
+
+@app.route('/api/aluno/login', methods=['POST'])
+def aluno_login():
+    negado = _exige_bibliotecaria()
+    if negado:
+        return negado
+    data = request.json or {}
+    email = (data.get('email') or '').strip()
+    if not email:
+        return jsonify({"erro": "O e-mail é obrigatório."}), 400
+    conn = db_manager.get_connection()
+    cursor = conn.cursor()
+    cursor.execute("SELECT id, nome, tipo, email, sala, periodo, materia, telefone, avatar_seed FROM Usuarios WHERE tipo = 'estudante' AND email = ?", (email,))
+    row = cursor.fetchone()
+    conn.close()
+    if not row:
+        return jsonify({"erro": "Nenhum estudante encontrado com esse e-mail."}), 404
+    session['aluno_id'] = row[0]
+    session['tipo_sessao'] = 'aluno'
+    return jsonify({
+        "status": "ok",
+        "aluno": {
+            "id": row[0], "nome": row[1], "tipo": row[2], "email": row[3],
+            "sala": row[4], "periodo": row[5], "materia": row[6],
+            "telefone": row[7], "avatar_seed": row[8] or f'aluno-{row[0]}'
+        }
+    })
+
+@app.route('/api/aluno/perfil', methods=['GET'])
+def aluno_perfil():
+    negado = _exige_bibliotecaria()
+    if negado:
+        return negado
+    aluno = _aluno_atual()
+    if not aluno:
+        return jsonify({"autenticado": False}), 401
+    return jsonify({"autenticado": True, "aluno": aluno})
+
+@app.route('/api/aluno/logout', methods=['POST'])
+def aluno_logout():
+    session.pop('aluno_id', None)
+    session.pop('tipo_sessao', None)
+    return jsonify({"status": "ok"})
+
+@app.route('/api/aluno/emprestimos', methods=['GET'])
+def aluno_emprestimos():
+    negado = _exige_bibliotecaria()
+    if negado:
+        return negado
+    aluno = _aluno_atual()
+    if not aluno:
+        return jsonify({"erro": "Não autenticado"}), 401
+    estado = request.args.get('estado', 'ativos')
+    conn = db_manager.get_connection()
+    cursor = conn.cursor()
+    if estado == 'ativos':
+        cursor.execute('''
+            SELECT e.id, l.nome, l.capa_url, e.data_emprestimo, e.data_vencimento, e.status
+            FROM Emprestimo e JOIN Livros l ON e.livros_id = l.id
+            WHERE e.usuarios_id = ? AND e.status IN ('Aprovado', 'Atrasado')
+            ORDER BY e.data_vencimento
+        ''', (aluno['id'],))
+    else:
+        cursor.execute('''
+            SELECT e.id, l.nome, l.capa_url, e.data_emprestimo, e.data_vencimento, e.status
+            FROM Emprestimo e JOIN Livros l ON e.livros_id = l.id
+            WHERE e.usuarios_id = ?
+            ORDER BY e.data_emprestimo DESC
+        ''', (aluno['id'],))
+    filas = cursor.fetchall()
+    conn.close()
+    resultado = []
+    for r in filas:
+        resultado.append({
+            "id": r[0], "livro": r[1], "capa": r[2],
+            "data_emprestimo": r[3], "data_vencimento": r[4], "status": r[5]
+        })
+    return jsonify(resultado)
+
+@app.route('/api/aluno/avatar', methods=['POST'])
+def aluno_avatar():
+    negado = _exige_bibliotecaria()
+    if negado:
+        return negado
+    aluno = _aluno_atual()
+    if not aluno:
+        return jsonify({"erro": "Não autenticado"}), 401
+    data = request.json or {}
+    seed = (data.get('seed') or '').strip()
+    if not seed:
+        return jsonify({"erro": "Semente vazia"}), 400
+    conn = db_manager.get_connection()
+    cursor = conn.cursor()
+    cursor.execute("UPDATE Usuarios SET avatar_seed = ? WHERE id = ?", (seed, aluno['id']))
+    conn.commit()
+    conn.close()
+    return jsonify({"status": "ok", "avatar_seed": seed})
 
 # ROTAS DE CONFIGURAÇÃO - protegidas por admin (exceto leitura da quantidade de aulas)
 @app.route('/api/config/senha/status', methods=['GET'])
@@ -1160,12 +1447,13 @@ def excluir_livro(id):
 def api_leitores():
     conn = db_manager.get_connection()
     cursor = conn.cursor()
-    cursor.execute('SELECT id, nome, tipo, email, sala, periodo, materia, telefone FROM Usuarios WHERE tipo != "bibliotecario"')
+    cursor.execute('SELECT id, nome, tipo, email, sala, periodo, materia, telefone, avatar_seed FROM Usuarios WHERE tipo != "bibliotecario"')
     leitores = []
     for row in cursor.fetchall():
         leitores.append({
             "id": row[0], "nome": row[1], "tipo": row[2], "email": row[3],
-            "sala": row[4], "periodo": row[5], "materia": row[6], "telefone": row[7]
+            "sala": row[4], "periodo": row[5], "materia": row[6], "telefone": row[7],
+            "avatar_seed": row[8] or f'leitor-{row[0]}'
         })
     conn.close()
     return jsonify(leitores)
@@ -1178,7 +1466,7 @@ def buscar_leitor():
         return jsonify([])
     conn = db_manager.get_connection()
     cursor = conn.cursor()
-    cursor.execute('''SELECT id, nome, tipo, email, sala, periodo, materia, telefone 
+    cursor.execute('''SELECT id, nome, tipo, email, sala, periodo, materia, telefone, avatar_seed 
                       FROM Usuarios 
                       WHERE tipo != "bibliotecario" AND nome LIKE ? 
                       ORDER BY nome LIMIT 10''', (f'%{q}%',))
@@ -1186,7 +1474,8 @@ def buscar_leitor():
     for row in cursor.fetchall():
         leitores.append({
             "id": row[0], "nome": row[1], "tipo": row[2], "email": row[3],
-            "sala": row[4], "periodo": row[5], "materia": row[6], "telefone": row[7]
+            "sala": row[4], "periodo": row[5], "materia": row[6], "telefone": row[7],
+            "avatar_seed": row[8] or f'leitor-{row[0]}'
         })
     conn.close()
     return jsonify(leitores)
@@ -1237,6 +1526,20 @@ def excluir_leitor(id):
     conn.commit()
     conn.close()
     return jsonify({"status": "ok"})
+
+@app.route('/api/leitores/<int:id>/avatar', methods=['POST'])
+@admin_required
+def set_avatar_leitor(id):
+    data = request.json or {}
+    seed = (data.get('seed') or '').strip()
+    if not seed:
+        return jsonify({"erro": "Semente vazia"}), 400
+    conn = db_manager.get_connection()
+    cursor = conn.cursor()
+    cursor.execute("UPDATE Usuarios SET avatar_seed = ? WHERE id = ?", (seed, id))
+    conn.commit()
+    conn.close()
+    return jsonify({"status": "ok", "avatar_seed": seed})
 
 # ROTAS DE EMPRÉSTIMOS (escrita protegida)
 @app.route('/api/emprestimos', methods=['POST'])

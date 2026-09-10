@@ -1,0 +1,671 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>BIBI — Biblioteca Inteligente</title>
+<link rel="stylesheet" href="/static/css/styles.css">
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+<body>
+
+<!-- ═══════════════════════════════════════════════════════════════════
+     LANDING
+     ═══════════════════════════════════════════════════════════════════ -->
+<section class="screen screen-standalone landing-screen active" id="landing">
+  <header class="landing-header">
+    <div class="landing-brand">
+      <img class="brand-icon" src="/static/images/icon.png" alt="BIBI" onerror="this.style.display='none';this.nextElementSibling.style.display='flex';">
+      <span class="brand-mark brand-mark-fallback">B</span>
+      <span class="landing-brand-name">BIBI</span>
+    </div>
+    <nav class="landing-nav">
+      <button type="button" class="landing-nav-btn active" data-landing-tab="home">Início</button>
+      <button type="button" class="landing-nav-btn" data-landing-tab="sobre">Sobre nós</button>
+    </nav>
+  </header>
+
+  <main class="landing-home" id="landing-home">
+    <div class="landing-left">
+      <div class="landing-left-text">
+        <p class="landing-eyebrow">Biblioteca Inteligente</p>
+        <h1 class="landing-title">BIBI</h1>
+        <p class="landing-quote">"Um bom livro é sempre um amigo — e a BIBI cuida dessa amistade com carinho e tecnologia."</p>
+      </div>
+      <button type="button" class="btn btn-primary btn-cta" data-go="login">Entrar no Sistema →</button>
+    </div>
+    <div class="arch-frame hero-carousel" id="hero-carousel">
+      <div class="hero-carousel-overlay"></div>
+    </div>
+  </main>
+
+  <main class="landing-sobre" id="landing-sobre">
+    <h2 class="sobre-title">Sobre nós</h2>
+    <div class="sobre-prose">
+      <p>A BIBI — Biblioteca Inteligente — nasceu da necessidade de modernizar a gestão das bibliotecas escolares, tornando o acesso ao conhecimento mais eficiente, agradável e inclusivo.</p>
+      <p>Nossa missão é conectar alunos e professores ao mundo da leitura de forma simples, intuitiva e bela.</p>
+      <p>A plataforma oferece controle completo do acervo, gestão de empréstimos, agenda de uso do espaço e recomendações personalizadas.</p>
+    </div>
+    <div class="sobre-links">
+      <a href="#">Instagram</a>
+      <a href="#">LinkedIn</a>
+      <a href="#">GitHub</a>
+    </div>
+  </main>
+</section>
+
+<!-- ═══════════════════════════════════════════════════════════════════
+     LOGIN (criação de conta da bibliotecária no primeiro início / login)
+     ═══════════════════════════════════════════════════════════════════ -->
+<section class="screen screen-standalone login-screen" id="login">
+  <div class="login-row">
+    <div class="login-card">
+      <div class="login-card-head">
+        <img class="login-icon" src="/static/images/icon.png" alt="BIBI" onerror="this.style.display='none';">
+        <span class="login-mark login-mark-fallback">B</span>
+        <h1 class="login-title">BIBI</h1>
+        <p class="login-subtitle">Biblioteca Inteligente</p>
+      </div>
+
+      <div class="segmented" id="login-tabs">
+        <button type="button" class="segmented-item active" data-login-role="bibliotecaria">Bibliotecária</button>
+        <button type="button" class="segmented-item" data-login-role="aluno">Aluno</button>
+      </div>
+
+      <div class="login-fields" id="login-fields">
+        <!-- Bibliotecária -->
+        <div class="login-fields-lib">
+          <p class="login-mode-note" id="login-mode-note"></p>
+          <label class="field"><span class="field-label">Usuária</span><input class="input" id="lib-login-user" type="text" placeholder="usuária"></label>
+          <label class="field"><span class="field-label">Senha</span><input class="input" id="lib-login-pass" type="password" placeholder="••••••••"></label>
+        </div>
+        <!-- Aluno (login próprio por e-mail) -->
+        <div class="login-fields-stu">
+          <label class="field"><span class="field-label">E-mail</span><input class="input" id="stu-login-email" type="email" placeholder="aluno@escola.edu.br"></label>
+        </div>
+        <p class="login-error" id="login-error"></p>
+        <button type="button" class="btn btn-primary btn-block btn-lg" id="login-submit">Entrar</button>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══════════════════════════════════════════════════════════════════
+     APP SHELL (área autenticada: sidebar + main — preenchido por /static/js/app.js)
+     ═══════════════════════════════════════════════════════════════════ -->
+<div class="screen app-shell" id="app">
+  <aside class="sidebar" id="sidebar">
+    <div class="sidebar-logo">
+      <img class="brand-icon" src="/static/images/icon.png" alt="BIBI" onerror="this.style.display='none';this.nextElementSibling.style.display='flex';">
+      <span class="brand-mark brand-mark-fallback">B</span>
+      <div class="sidebar-logo-text">
+        <p class="sidebar-brand">BIBI</p>
+        <p class="sidebar-brand-sub">Biblioteca Inteligente</p>
+      </div>
+    </div>
+
+    <nav class="sidebar-nav sidebar-scroll" id="sidebar-nav"></nav>
+
+    <div class="sidebar-user">
+      <div class="sidebar-user-row">
+        <div class="arch-avatar" id="sidebar-user-avatar"></div>
+        <div class="sidebar-user-info">
+          <p class="sidebar-user-name" id="sidebar-user-name"></p>
+          <p class="sidebar-user-sub" id="sidebar-user-sub"></p>
+        </div>
+        <button type="button" class="sidebar-logout" id="sidebar-logout" title="Sair">↩</button>
+      </div>
+      <div class="sidebar-theme-row">
+        <button type="button" class="theme-toggle" id="theme-toggle" title="Alternar tema claro/escuro">🌙 Tema escuro</button>
+      </div>
+    </div>
+  </aside>
+
+  <main class="main-content" id="main">
+<!-- ═════════════════ LIB: DASHBOARD ═════════════════ -->
+    <section class="screen view" id="lib-dashboard">
+      <div class="page page-lg">
+        <div class="page-head">
+          <h1 class="page-title">Dashboard</h1>
+          <p class="page-subtitle" id="dash-subtitle">Resumo do acervo</p>
+        </div>
+
+        <div class="kpi-grid">
+          <div class="kpi-card kpi-svg" id="kpi-titulos"></div>
+          <div class="kpi-card kpi-svg" id="kpi-exemplares"></div>
+          <div class="kpi-card kpi-svg" id="kpi-ativos"></div>
+          <div class="kpi-card kpi-alert kpi-svg" id="kpi-atrasados"></div>
+          <div class="kpi-card kpi-svg" id="kpi-hoje"></div>
+          <div class="kpi-card kpi-svg" id="kpi-agenda"></div>
+          <div class="kpi-card kpi-svg" id="kpi-leitores"></div>
+        </div>
+
+        <div class="dashboard-row">
+          <div class="dashboard-panel">
+            <h3>Gêneros em Circulação</h3>
+            <canvas id="grafico-generos" width="200" height="200"></canvas>
+          </div>
+          <div class="dashboard-panel">
+            <h3>Preferência Histórica</h3>
+            <canvas id="grafico-historico" width="200" height="200"></canvas>
+          </div>
+        </div>
+
+        <div class="charts-row">
+          <div class="chart-card">
+            <h3 class="chart-title">Livros Mais Emprestados</h3>
+            <ol class="rank-list top-books-list" id="dash-top-books"></ol>
+          </div>
+          <div class="chart-card chart-card-wide">
+            <h3 class="chart-title">Ranking de Leitores · Trimestre</h3>
+            <ol class="rank-list" id="dash-ranking"></ol>
+          </div>
+        </div>
+
+        <div class="dashboard-panel adormecidos-panel">
+          <h3>Livros Adormecidos (sem empréstimo há 6 meses)</h3>
+          <p class="adormecidos-empty" id="dash-adormecidos-empty"></p>
+          <div class="adormecidos-tags" id="dash-adormecidos"></div>
+        </div>
+
+        <div class="table-card">
+          <div class="table-card-head"><h3 class="table-card-title">Empréstimos Recentes</h3></div>
+          <table class="table">
+            <thead>
+              <tr><th class="cell-leader">Leitor</th><th>Livro</th><th>Vencimento</th><th>Status</th></tr>
+            </thead>
+            <tbody id="dash-loans" class="table-compact"></tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+<!-- ═════════════════ LIB: ACERVO ═════════════════ -->
+    <section class="screen view" id="lib-acervo">
+      <div class="page page-lg">
+        <div class="acervo-head">
+          <div class="page-head">
+            <h1 class="page-title">Acervo</h1>
+            <p class="page-subtitle"><span id="lib-acervo-count"></span> títulos cadastrados</p>
+          </div>
+          <div class="acervo-tools">
+            <input class="input input-search" id="lib-acervo-search" type="text" placeholder="Buscar título, autor...">
+            <button type="button" class="btn btn-primary" data-modal-open="lib-isbn-modal">+ Adicionar Livro</button>
+          </div>
+        </div>
+
+        <div class="shelves" id="lib-acervo-shelves"></div>
+      </div>
+
+      <div class="modal-backdrop" id="lib-isbn-modal">
+        <div class="modal">
+          <div class="modal-header"><h2 class="modal-title">Adicionar por ISBN</h2><button type="button" class="modal-close" data-modal-close="lib-isbn-modal">✕</button></div>
+          <div class="modal-body">
+            <label class="field"><span class="field-label">ISBN</span><input class="input" id="lib-isbn-input" type="text" placeholder="978-0-000-00000-0"></label>
+            <p class="modal-note" id="lib-isbn-msg">Se não encontrado, abrirá cadastro manual.</p>
+          </div>
+          <div class="modal-footer">
+            <button type="button" class="btn btn-secondary" data-modal-close="lib-isbn-modal">Cancelar</button>
+            <button type="button" class="btn btn-primary" id="lib-isbn-search">Buscar</button>
+          </div>
+        </div>
+      </div>
+
+      <div class="modal-backdrop" id="lib-manual-modal">
+        <div class="modal">
+          <div class="modal-header"><h2 class="modal-title">Cadastro Manual</h2><button type="button" class="modal-close" data-modal-close="lib-manual-modal">✕</button></div>
+          <div class="modal-body">
+            <div class="field-stack">
+              <label class="field"><span class="field-label">ISBN</span><input class="input" id="lib-manual-isbn" type="text" placeholder="978-0-000-00000-0"></label>
+              <label class="field"><span class="field-label">Título</span><input class="input" id="lib-manual-titulo" type="text" placeholder="Nome do livro"></label>
+              <label class="field"><span class="field-label">Autor</span><input class="input" id="lib-manual-autor" type="text" placeholder="Nome do autor"></label>
+              <div class="field-grid">
+                <label class="field"><span class="field-label">Ano</span><input class="input" id="lib-manual-ano" type="number"></label>
+                <label class="field"><span class="field-label">Categoria</span><input class="input" id="lib-manual-categoria" type="text" placeholder="Ficção"></label>
+              </div>
+              <label class="field"><span class="field-label">Quantidade</span><input class="input" id="lib-manual-quantidade" type="number" value="1"></label>
+              <label class="field"><span class="field-label">Localização (prateleira)</span><input class="input" id="lib-manual-local" type="text"></label>
+              <label class="field"><span class="field-label">Capa (URL)</span><input class="input" id="lib-manual-capa" type="text" placeholder="https://..."></label>
+            </div>
+          </div>
+          <div class="modal-footer">
+            <button type="button" class="btn btn-secondary" data-modal-close="lib-manual-modal">Cancelar</button>
+            <button type="button" class="btn btn-primary" id="lib-manual-save">Salvar</button>
+          </div>
+        </div>
+      </div>
+    </section>
+<!-- ═════════════════ LIB: BOOK DETAIL ═════════════════ -->
+    <section class="screen view" id="lib-book-detail">
+      <div class="page page-nospace">
+        <button type="button" class="back-link" data-go="lib-acervo">← Voltar ao Acervo</button>
+        <div class="detail-flex">
+          <div class="detail-cover-wrap">
+            <div class="arch-frame detail-cover" id="lib-detail-cover"></div>
+          </div>
+          <div class="detail-info" id="lib-detail-body"></div>
+        </div>
+      </div>
+
+      <div class="modal-backdrop" id="lib-delete-modal">
+        <div class="modal">
+          <div class="modal-header"><h2 class="modal-title">Excluir Livro</h2><button type="button" class="modal-close" data-modal-close="lib-delete-modal">✕</button></div>
+          <div class="modal-body"><p class="modal-text" id="lib-delete-title"></p></div>
+          <div class="modal-footer">
+            <button type="button" class="btn btn-danger" id="lib-delete-confirm">Excluir</button>
+            <button type="button" class="btn btn-secondary" data-modal-close="lib-delete-modal">Cancelar</button>
+          </div>
+        </div>
+      </div>
+
+      <div class="modal-backdrop" id="lib-edit-modal">
+        <div class="modal">
+          <div class="modal-header"><h2 class="modal-title">Editar Livro</h2><button type="button" class="modal-close" data-modal-close="lib-edit-modal">✕</button></div>
+          <div class="modal-body">
+            <div class="field-stack">
+              <label class="field"><span class="field-label">Título</span><input class="input" id="lib-edit-titulo" type="text"></label>
+              <label class="field"><span class="field-label">Autor</span><input class="input" id="lib-edit-autor" type="text"></label>
+              <div class="field-grid">
+                <label class="field"><span class="field-label">Ano</span><input class="input" id="lib-edit-ano" type="number"></label>
+                <label class="field"><span class="field-label">Categoria</span><input class="input" id="lib-edit-categoria" type="text"></label>
+              </div>
+              <label class="field"><span class="field-label">ISBN</span><input class="input" id="lib-edit-isbn" type="text"></label>
+              <label class="field"><span class="field-label">Localização (prateleira)</span><input class="input" id="lib-edit-local" type="text"></label>
+            </div>
+          </div>
+          <div class="modal-footer">
+            <button type="button" class="btn btn-secondary" data-modal-close="lib-edit-modal">Cancelar</button>
+            <button type="button" class="btn btn-primary" id="lib-edit-save">Salvar Alterações</button>
+          </div>
+        </div>
+      </div>
+
+      <div class="modal-backdrop" id="lib-loan-modal">
+        <div class="modal">
+          <div class="modal-header"><h2 class="modal-title">Novo Empréstimo</h2><button type="button" class="modal-close" data-modal-close="lib-loan-modal">✕</button></div>
+          <div class="modal-body" id="lib-loan-body"></div>
+          <div class="modal-footer">
+            <button type="button" class="btn btn-secondary" data-modal-close="lib-loan-modal">Cancelar</button>
+            <button type="button" class="btn btn-primary" id="lib-loan-confirm">Confirmar Empréstimo</button>
+          </div>
+        </div>
+      </div>
+    </section>
+<!-- ═════════════════ LIB: EMPRÉSTIMOS ═════════════════ -->
+    <section class="screen view" id="lib-emprestimos">
+      <div class="page">
+        <div class="page-head">
+          <h1 class="page-title">Empréstimos</h1>
+          <p class="page-subtitle"><span id="lib-loans-total"></span> empréstimos no total</p>
+        </div>
+
+        <div class="tab-row" id="lib-loans-tabs">
+          <button type="button" class="tab-button active" data-loan-filter="Todos">Todos</button>
+          <button type="button" class="tab-button" data-loan-filter="Ativos">Ativos</button>
+          <button type="button" class="tab-button" data-loan-filter="Atrasados">Atrasados</button>
+          <button type="button" class="tab-button" data-loan-filter="Devolução Hoje">Devolução Hoje</button>
+          <button type="button" class="tab-button" data-loan-filter="Devolvidos">Devolvidos</button>
+        </div>
+
+        <div class="table-card">
+          <table class="table">
+            <thead>
+              <tr><th class="cell-leader">Leitor</th><th>Livro</th><th>Empréstimo</th><th>Vencimento</th><th>Status</th><th>Ações</th></tr>
+            </thead>
+            <tbody id="lib-loans-body"></tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+<!-- ═════════════════ LIB: AGENDA ═════════════════ -->
+    <section class="screen view" id="lib-agenda">
+      <div class="page page-no-gap">
+        <div class="agenda-layout">
+          <div class="agenda-main">
+            <div class="page-head">
+              <h1 class="page-title">Agenda</h1>
+              <p class="page-subtitle" id="lib-agenda-subtitle">Semana atual</p>
+            </div>
+
+            <div class="table-card">
+              <table class="table agenda-table">
+                <thead>
+                  <tr>
+                    <th class="agenda-period-head">Período</th>
+                    <th class="agenda-head">Seg</th>
+                    <th class="agenda-head">Ter</th>
+                    <th class="agenda-head">Qua</th>
+                    <th class="agenda-head">Qui</th>
+                    <th class="agenda-head">Sex</th>
+                  </tr>
+                </thead>
+                <tbody id="lib-agenda-body"></tbody>
+              </table>
+            </div>
+          </div>
+
+          <aside class="agenda-aside">
+            <h3 class="agenda-aside-title">Próximos Agendamentos</h3>
+            <div class="upcoming-list" id="lib-agenda-upcoming"></div>
+          </aside>
+        </div>
+      </div>
+
+      <div class="modal-backdrop" id="lib-agenda-new-modal">
+        <div class="modal">
+          <div class="modal-header"><h2 class="modal-title" id="lib-agenda-new-title">Novo Agendamento</h2><button type="button" class="modal-close" data-modal-close="lib-agenda-new-modal">✕</button></div>
+          <div class="modal-body">
+            <div class="field-stack">
+              <label class="field"><span class="field-label">Professor</span><input class="input" id="lib-ag-new-prof" type="text" placeholder="Nome do professor"></label>
+              <label class="field"><span class="field-label">Matéria</span><input class="input" id="lib-ag-new-mat" type="text" placeholder="Português, Matemática..."></label>
+              <label class="field"><span class="field-label">Turma</span><input class="input" id="lib-ag-new-turma" type="text" placeholder="9A, 8B..."></label>
+              <label class="field"><span class="field-label">Uso</span><input class="input" id="lib-ag-new-uso" type="text" placeholder="Leitura livre, Pesquisa..."></label>
+              <label class="field"><span class="field-label">Data</span><input class="input" id="lib-ag-new-data" type="date"></label>
+              <label class="field"><span class="field-label">Período</span><select class="input" id="lib-ag-new-periodo"><option>Manhã</option><option>Tarde</option><option>Noite</option></select></label>
+              <label class="field"><span class="field-label">Aula</span><input class="input" id="lib-ag-new-aula" type="number" value="1"></label>
+            </div>
+          </div>
+          <div class="modal-footer">
+            <button type="button" class="btn btn-secondary" data-modal-close="lib-agenda-new-modal">Cancelar</button>
+            <button type="button" class="btn btn-primary" id="lib-agenda-new-save">Salvar</button>
+          </div>
+        </div>
+      </div>
+
+      <div class="modal-backdrop" id="lib-agenda-filled-modal">
+        <div class="modal">
+          <div class="modal-header"><h2 class="modal-title">Detalhes do Agendamento</h2><button type="button" class="modal-close" data-modal-close="lib-agenda-filled-modal">✕</button></div>
+          <div class="modal-body">
+            <div class="field-grid modal-detail-grid" id="lib-agenda-filled-body"></div>
+          </div>
+          <div class="modal-footer">
+            <button type="button" class="btn btn-danger" id="lib-agenda-filled-delete">Excluir</button>
+            <button type="button" class="btn btn-secondary" data-modal-close="lib-agenda-filled-modal">Fechar</button>
+          </div>
+        </div>
+      </div>
+    </section>
+<!-- ═════════════════ LIB: LEITORES ═════════════════ -->
+    <section class="screen view" id="lib-leitores">
+      <div class="page">
+        <div class="acervo-head">
+          <div class="page-head">
+            <h1 class="page-title">Leitores</h1>
+            <p class="page-subtitle"><span id="lib-leitores-count"></span> leitores cadastrados</p>
+          </div>
+          <button type="button" class="btn btn-primary" data-modal-open="lib-reader-modal">+ Novo Leitor</button>
+        </div>
+
+        <div class="tab-row" id="lib-readers-tabs">
+          <button type="button" class="tab-button active" data-reader-filter="Todos">Todos</button>
+          <button type="button" class="tab-button" data-reader-filter="Estudante">Estudante</button>
+          <button type="button" class="tab-button" data-reader-filter="Professor">Professor</button>
+        </div>
+
+        <div class="table-card">
+          <table class="table">
+            <thead>
+              <tr><th class="cell-leader">Nome</th><th>Tipo</th><th>Detalhes</th><th>Telefono</th><th>Ações</th></tr>
+            </thead>
+            <tbody id="lib-leitores-body"></tbody>
+          </table>
+        </div>
+      </div>
+
+      <div class="modal-backdrop" id="lib-reader-modal">
+        <div class="modal">
+          <div class="modal-header"><h2 class="modal-title">Novo Leitor</h2><button type="button" class="modal-close" data-modal-close="lib-reader-modal">✕</button></div>
+          <div class="modal-body">
+            <div class="field-stack">
+              <div class="segmented" id="reader-type-tabs">
+                <button type="button" class="segmented-item active" data-reader-type="estudante">Estudante</button>
+                <button type="button" class="segmented-item" data-reader-type="professor">Professor</button>
+              </div>
+              <label class="field"><span class="field-label">Nome completo</span><input class="input" id="reader-nome" type="text" placeholder="Nome do leitor"></label>
+              <label class="field"><span class="field-label">E-mail</span><input class="input" id="reader-email" type="email" placeholder="leitor@escola.edu.br"></label>
+              <label class="field"><span class="field-label">Telefono</span><input class="input" id="reader-tel" type="text" placeholder="(11) 99999-0000"></label>
+              <div class="reader-fields-student" id="reader-fields-student">
+                <div class="field-grid">
+                  <label class="field"><span class="field-label">Sala</span><input class="input" id="reader-sala" type="text" placeholder="9A"></label>
+                  <label class="field"><span class="field-label">Período</span><select class="input" id="reader-periodo"><option>Manhã</option><option>Tarde</option><option>Noite</option></select></label>
+                </div>
+              </div>
+              <div class="reader-fields-professor" id="reader-fields-professor">
+                <label class="field"><span class="field-label">Matéria</span><input class="input" id="reader-materia" type="text" placeholder="Português, Matemática..."></label>
+              </div>
+            </div>
+          </div>
+          <div class="modal-footer">
+            <button type="button" class="btn btn-secondary" data-modal-close="lib-reader-modal">Cancelar</button>
+            <button type="button" class="btn btn-primary" id="lib-reader-save">Salvar</button>
+          </div>
+        </div>
+      </div>
+
+      <div class="modal-backdrop" id="lib-reader-avatar-modal">
+        <div class="modal">
+          <div class="modal-header"><h2 class="modal-title">Personalizar Avatar</h2><button type="button" class="modal-close" data-modal-close="lib-reader-avatar-modal">✕</button></div>
+          <div class="modal-body">
+            <div class="avatar-picker">
+              <div class="avatar-picker-preview"><div class="arch-frame avatar-preview-frame"><img class="avatar-preview-img" id="reader-avatar-preview" alt="Avatar preview"></div></div>
+              <p class="field-label avatar-style-label">Escolha um avatar</p>
+              <div class="style-grid" id="reader-avatar-grid"></div>
+            </div>
+          </div>
+          <div class="modal-footer">
+            <button type="button" class="btn btn-secondary" data-modal-close="lib-reader-avatar-modal">Cancelar</button>
+            <button type="button" class="btn btn-primary" id="reader-avatar-save">Salvar Avatar</button>
+          </div>
+        </div>
+      </div>
+    </section>
+<!-- ═════════════════ LIB: MODERAÇÃO ═════════════════ -->
+    <section class="screen view" id="lib-moderacao">
+      <div class="page">
+        <div class="page-head">
+          <h1 class="page-title">Moderação de Comentários</h1>
+          <p class="page-subtitle"><span id="moderacao-count"></span> comentário(s) aguardando revisão</p>
+        </div>
+
+        <div class="empty-state" id="moderacao-empty">
+          <div class="arch-frame arch-empty">
+            <div class="arch-empty-icon arch-empty-icon-check"></div>
+          </div>
+          <p class="empty-state-text">Nenhun comentário pendente</p>
+        </div>
+
+        <div class="moderacao-list" id="moderacao-list"></div>
+      </div>
+    </section>
+
+<!-- ═════════════════ LIB: CONFIGURAÇÕES ═════════════════ -->
+    <section class="screen view" id="lib-config">
+      <div class="page page-narrow">
+        <div class="page-head">
+          <h1 class="page-title">Configurações</h1>
+          <p class="page-subtitle">Gerencie as preferências do sistema</p>
+        </div>
+
+        <div class="config-group">
+          <p class="config-group-title">Segurança e Permissões</p>
+          <div class="toggle-row"><span class="toggle-label">Bloquear envio de e-mails</span><button type="button" class="toggle" data-config-toggle="bloquear_email"><span class="toggle-knob"></span></button></div>
+          <div class="toggle-row"><span class="toggle-label">Exigir senha para empréstimos</span><button type="button" class="toggle" data-config-toggle="exigir_senha_emprestimo"><span class="toggle-knob"></span></button></div>
+          <div class="toggle-row"><span class="toggle-label">Exigir senha para agendamentos</span><button type="button" class="toggle" data-config-toggle="exigir_senha_agendamento"><span class="toggle-knob"></span></button></div>
+          <div class="toggle-row"><span class="toggle-label">Obrigar localização do livro no cadastro</span><button type="button" class="toggle" data-config-toggle="obligar_localizacion_livro"><span class="toggle-knob"></span></button></div>
+          <div class="toggle-row"><span class="toggle-label">Bloquear exclusão de agendamentos</span><button type="button" class="toggle" data-config-toggle="bloquear_excluir_agendamiento"><span class="toggle-knob"></span></button></div>
+        </div>
+
+        <div class="config-card">
+          <p class="config-card-title">Agenda</p>
+          <div class="config-row">
+            <span class="config-row-label">Quantidade de aulas por dia</span>
+            <input class="input input-number" id="config-aulas" type="number" value="6">
+          </div>
+          <button type="button" class="btn btn-secondary btn-block" id="config-aulas-save">Salvar quantidade de aulas</button>
+        </div>
+
+        <div class="config-card">
+          <p class="config-card-title">E-mail SMTP</p>
+          <label class="field"><span class="field-label">E-mail da organização</span><input class="input" id="config-email-org" type="email"></label>
+          <label class="field"><span class="field-label">Senha de aplicativo</span><input class="input" id="config-email-pass" type="password"></label>
+          <button type="button" class="btn btn-secondary btn-block" id="config-email-save">Salvar e-mail</button>
+        </div>
+
+        <div class="config-card">
+          <p class="config-card-title">PIN de Seguridad (4 dígitos)</p>
+          <label class="field"><span class="field-label">PIN atual</span><input class="input" id="config-pin-old" type="password" placeholder="••••"></label>
+          <label class="field"><span class="field-label">Novo PIN</span><input class="input" id="config-pin-new" type="password" placeholder="••••"></label>
+          <label class="field"><span class="field-label">Confirmar novo PIN</span><input class="input" id="config-pin-confirm" type="password" placeholder="••••"></label>
+          <button type="button" class="btn btn-secondary btn-block" id="config-pin-save">Definir PIN</button>
+        </div>
+      </div>
+    </section>
+<!-- ═════════════════ STU: ACERVO ═════════════════ -->
+    <section class="screen view" id="stu-acervo">
+      <div class="page page-lg">
+        <div class="acervo-head">
+          <div class="page-head">
+            <h1 class="page-title">Acervo</h1>
+            <p class="page-subtitle">Explore nossa coleção de <span id="stu-acervo-count"></span> títulos</p>
+          </div>
+          <input class="input input-search" id="stu-acervo-search" type="text" placeholder="Buscar livro...">
+        </div>
+
+        <div class="shelves" id="stu-acervo-shelves"></div>
+      </div>
+    </section>
+
+<!-- ═════════════════ STU: BOOK DETAIL ═════════════════ -->
+    <section class="screen view" id="stu-book-detail">
+      <div class="page page-nospace">
+        <button type="button" class="back-link" data-go="stu-acervo">← Voltar ao Acervo</button>
+        <div class="detail-flex">
+          <div class="detail-cover-wrap">
+            <div class="arch-frame detail-cover" id="stu-detail-cover"></div>
+          </div>
+          <div class="detail-info" id="stu-detail-body"></div>
+        </div>
+      </div>
+
+      <div class="chat-backdrop" id="chat-modal">
+        <div class="chat-panel">
+          <div class="chat-header">
+            <div class="chat-header-logo"><img src="/static/images/icon.png" alt="B" onerror="this.style.display='none'"></div>
+            <div class="chat-header-info">
+              <p class="chat-header-name">BIBI</p>
+              <p class="chat-header-sub" id="chat-sub"></p>
+            </div>
+            <button type="button" class="chat-close" id="chat-close">✕</button>
+          </div>
+          <div class="chat-messages" id="chat-messages"></div>
+          <div class="chat-input-row">
+            <input class="input chat-input" id="chat-input" type="text" placeholder="Pergunte algo sobre o livro...">
+            <button type="button" class="btn btn-primary" id="chat-send">→</button>
+          </div>
+        </div>
+      </div>
+    </section>
+
+<!-- ═════════════════ STU: EMPRÉSTIMOS ═════════════════ -->
+    <section class="screen view" id="stu-emprestimos">
+      <div class="page">
+        <div class="page-head">
+          <h1 class="page-title">Meus Empréstimos</h1>
+          <p class="page-subtitle" id="stu-loans-subtitle"></p>
+        </div>
+        <div class="loan-list" id="stu-loans-list"></div>
+      </div>
+    </section>
+
+<!-- ═════════════════ STU: RESERVAS ═════════════════ -->
+    <section class="screen view" id="stu-reservas">
+      <div class="page">
+        <h1 class="page-title">Minhas Reservas</h1>
+        <div class="empty-state empty-center" id="stu-reservas-empty">
+          <div class="arch-frame arch-empty">
+            <div class="arch-empty-icon arch-empty-icon-reserva"></div>
+          </div>
+          <p class="empty-state-text">Nenhuna reserva ativa</p>
+        </div>
+        <div class="reserva-list" id="stu-reservas-list"></div>
+      </div>
+    </section>
+<!-- ═════════════════ STU: HISTÓRICO ═════════════════ -->
+    <section class="screen view" id="stu-historico">
+      <div class="page">
+        <h1 class="page-title">Meu Histórico de Leitura</h1>
+        <div class="history-grid" id="stu-historico-grid"></div>
+      </div>
+    </section>
+
+<!-- ═════════════════ STU: AGENDA ═════════════════ -->
+    <section class="screen view" id="stu-agenda">
+      <div class="page">
+        <div class="page-head">
+          <h1 class="page-title">Agenda da Biblioteca</h1>
+          <p class="page-subtitle">Visualização dos horários reservados</p>
+        </div>
+        <div class="table-card">
+          <table class="table agenda-table">
+            <thead>
+              <tr>
+                <th class="agenda-period-head">Período</th>
+                <th class="agenda-head">Seg</th>
+                <th class="agenda-head">Ter</th>
+                <th class="agenda-head">Qua</th>
+                <th class="agenda-head">Qui</th>
+                <th class="agenda-head">Sex</th>
+              </tr>
+            </thead>
+            <tbody id="stu-agenda-body"></tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+<!-- ═════════════════ STU: PERFIL ═════════════════ -->
+    <section class="screen view" id="stu-perfil">
+      <div class="page page-lg">
+        <h1 class="page-title">Meu Perfil</h1>
+
+        <div class="profile-flex">
+          <div class="profile-info">
+            <div class="profile-head">
+              <div class="arch-avatar" id="profile-avatar"></div>
+              <div>
+                <h2 class="profile-name" id="profile-name">Estudante</h2>
+                <p class="profile-meta" id="profile-meta"></p>
+                <p class="profile-meta-small" id="profile-email"></p>
+              </div>
+            </div>
+            <div class="profile-stats">
+              <div class="profile-stat"><p class="profile-stat-value" id="profile-stat-lidos">0</p><p class="profile-stat-label">Livros lídos</p></div>
+              <div class="profile-stat"><p class="profile-stat-value" id="profile-stat-progress">0</p><p class="profile-stat-label">Em andamento</p></div>
+              <div class="profile-stat"><p class="profile-stat-value" id="profile-stat-reservas">0</p><p class="profile-stat-label">Reservas</p></div>
+            </div>
+          </div>
+
+          <div class="avatar-picker">
+            <h3 class="avatar-picker-title">Personalizar Avatar</h3>
+            <div class="avatar-picker-preview">
+              <div class="arch-frame avatar-preview-frame">
+                <img class="avatar-preview-img" id="avatar-preview" alt="Avatar preview">
+              </div>
+            </div>
+            <div>
+              <p class="field-label avatar-style-label">Escolha seu avatar</p>
+              <div class="style-grid" id="style-grid"></div>
+            </div>
+            <button type="button" class="btn btn-primary btn-block" id="avatar-save">Salvar Avatar</button>
+          </div>
+        </div>
+      </div>
+    </section>
+
+  </main>
+</div><!-- /#app -->
+
+<script src="/static/js/app.js"></script>
+</body>
+</html>
